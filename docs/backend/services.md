@@ -4,7 +4,7 @@
 
 ## Important Note
 
-This application does **not** have a formal service layer. Business logic is embedded directly in API endpoint functions. The sections below document the **logical services** implied by each module, regardless of how they are physically organized.
+The application has a **thin service layer** (created during structural cleanup). Business logic for filter resolution and authorization has been extracted from API endpoint functions into dedicated service modules. The sections below document all services — both physical modules in `app/services/` and logical services still embedded in API modules.
 
 ---
 
@@ -43,31 +43,20 @@ Registers a new user.
 5. Inserts into USERS table using raw SQL with `user_id_seq.nextval`
 6. Assigns role "ROLE_USER"
 
-**NOTE:** The commented-out ORM code (lines 53-57) suggests this was recently refactored from ORM to raw SQL.
-
 ---
 
 ## Authorization Service
 
-**Location:** `app/api/deps.py`
-
-### `require_any_role(*role_names) → Callable → User`
-A **dependency factory** that returns a FastAPI dependency. The returned dependency:
-
-1. Calls `get_current_user()` to authenticate
-2. Calls `get_user_role_names()` to resolve all effective roles
-3. Checks if the user has at least one of the required roles
-4. Returns the User if authorized, raises 403 otherwise
+**Location:** `app/services/authorization_service.py` (business logic), `app/api/deps.py` (FastAPI dependency wiring)
 
 ### `get_user_role_names(user, db) → Set[str]`
-Resolves all effective role names for a user:
-- **Direct roles:** `user.roles` (via `user_roles` table)
-- **Group-inherited roles:** `user.groups[i].roles` (via `USER_GROUPS` → `ROLE_GROUPS`)
-
-All role names are normalized to lowercase for case-insensitive comparison.
+Resolves all effective role names for a user (direct roles + group-inherited). Exported from `services/authorization_service.py`.
 
 ### `normalize_role(name) → str`
-Strips whitespace and lowercases a role name.
+Normalizes a role name for case-insensitive comparison. Exported from `services/authorization_service.py`.
+
+### `require_any_role(*role_names) → Callable → User`
+FastAPI dependency factory (in `api/deps.py`). Delegates to `get_user_role_names()` from the authorization service.
 
 ---
 
@@ -83,9 +72,23 @@ Strips whitespace and lowercases a role name.
 | `list_my_dashboards(db, user)` | Lists dashboards accessible to the user with last_opened timestamps |
 | `get_dashboard(dashboard_id, db, user)` | Gets a single dashboard by ID |
 
-### Dashboard Items (with Dynamic SQL Filtering)
+### Filter Resolution Service
 
-`get_dashboard_items(dashboard_id, filters, db, user)` — The most complex endpoint in the system.
+**Location:** `app/services/filter_service.py` (extracted from `api/dashboards.py`)
+
+#### `resolve_filters(raw_sql_text, filter_rows, provided_filters) -> (str, dict)`
+
+Replaces `{{filter:key}}` placeholders in SQL text with parameterized predicates. This is a pure function with no database or HTTP dependencies — independently testable.
+
+**Value Resolution Precedence:**
+1. User-provided filter value (from query string)
+2. Default value (from `DASHBOARD_FILTERS.default_value`)
+3. If `allow_empty`: skip filter entirely
+4. If not `allow_empty` and no value: return `AND 1 = 0` (no rows)
+
+### Dashboard Items
+
+`get_dashboard_items(dashboard_id, filters, db, user)` — The endpoint now delegates filter resolution to `resolve_filters()` rather than handling it inline.
 
 **Algorithm:**
 1. Parse `filters` JSON from query string
@@ -94,11 +97,8 @@ Strips whitespace and lowercases a role name.
    a. Look up `SQL_TEXT` from `SAVED_QUERIES` by `SQL_ID`
    b. Validate it's a SELECT statement
    c. Look up filter metadata from `DASHBOARD_FILTERS` + `DASHBOARD_FILTER_BINDINGS`
-   d. Build a `filter_meta` dictionary with operator, default value, allow_empty, logical_column
-   e. **Replace `{{filter:key}}` placeholders** in the SQL using `FILTER_PLACEHOLDER_RE`
-   f. For each placeholder, generate a parameterized predicate based on operator type
-   g. Execute the final SQL with `FETCH FIRST 1000 ROWS ONLY`
-   h. Return columns + rows
+   d. **Call `resolve_filters(raw_sql_text, filter_rows, provided_filters)`**
+   e. Execute the returned SQL with returned params
 
 **Supported Filter Operators:**
 
@@ -130,6 +130,18 @@ Strips whitespace and lowercases a role name.
 `get_dashboard_filter_groups(dashboard_id, db, user)` — Returns filter groups with their member filters, including position (XML), so the frontend can render them as positioned overlays.
 
 **NOTE:** The response_model annotation on this endpoint declares `response_model=DashboardFilterGroupResult` (singular) but returns `list(groups.values())` (plural). This is likely a bug — the annotation should be `List[DashboardFilterGroupResult]`.
+
+---
+
+## Raw SQL Helper
+
+**Location:** `app/db/raw.py`
+
+Centralises the `db.bind.connect()` pattern that was duplicated across `auth.py`, `dashboards.py`, and `editor.py`. Provides three helpers:
+
+- `execute(sql, db, params)` — Execute and return cursor result
+- `execute_and_fetch(sql, db, params)` — Execute SELECT and return all rows
+- `execute_and_commit(sql, db, params)` — Execute INSERT/UPDATE/DELETE and commit
 
 ---
 
@@ -184,7 +196,7 @@ ViewerPage mounts
        ├─ For each item:
        │    ├─ Query SAVED_QUERIES for SQL_TEXT
        │    ├─ Query DASHBOARD_FILTERS + BINDINGS for filter metadata
-       │    ├─ Replace {{filter:key}} placeholders
+       │    ├─ Call resolve_filters() (services/filter_service)
        │    ├─ Apply user-provided filter values
        │    └─ Execute final SQL
        └─ Return [{ item_id, item_type, geometry, attributes, query_result, tab_id }]

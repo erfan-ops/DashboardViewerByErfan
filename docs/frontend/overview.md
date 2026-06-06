@@ -11,14 +11,19 @@ frontend/src/
 ├── main.tsx              # App entry: providers, router, fonts, 401 interceptor
 ├── theme.ts              # Chakra UI theme config (light mode default)
 ├── components/           # Shared UI components
-│   ├── ProtectedRoute.tsx # Auth guard wrapper
-│   └── ThemeToggle.tsx   # Light/dark mode toggle
+│   ├── ProtectedRoute.tsx  # Auth guard wrapper
+│   ├── ThemeToggle.tsx     # Light/dark mode toggle
+│   ├── BarChartCanvas.tsx  # Bar chart wrapper (extracted from ViewerPage)
+│   ├── LineChartCanvas.tsx # Line chart wrapper (extracted from ViewerPage)
+│   └── PieChartCanvas.tsx  # Pie chart wrapper (extracted from ViewerPage)
 ├── core/                 # Chart engine + utilities
 │   ├── DashboardItem.ts   # Abstract chart base class
 │   ├── BarChartItem.ts   # Canvas 2D stacked bar chart
 │   ├── LineChartItem.ts   # Canvas 2D multi-line chart
 │   ├── PieChartItem.ts   # Canvas 2D multi-pie donut chart
 │   └── utils.ts          # Colors, Persian digits, XML parsers
+├── types/                # Shared TypeScript interfaces
+│   └── dashboard.ts       # Dashboard item, filter, tab types
 └── pages/                # Route-level page components
     ├── HomePage.tsx       # Dashboard listing
     ├── LoginPage.tsx      # User login

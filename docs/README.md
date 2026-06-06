@@ -116,15 +116,18 @@ React 18 (TypeScript)  ←→  FastAPI (Python 3.10)  ←→  Oracle DB
 
 ## Known Issues Summary
 
-| Severity | Issue | Location |
-|----------|-------|----------|
-| **High** | Dashboard `spec` and `owner_id` not persisted | `db/models.py`, `api/dashboards.py` |
-| **High** | `messure` typo breaks pie chart measure parsing | `core/utils.ts` line 401 |
-| **Medium** | JWT in localStorage (XSS risk) | `LoginPage.tsx`, `ProtectedRoute.tsx` |
-| **Medium** | N+1 queries in dashboard items endpoint | `api/dashboards.py` |
-| **Medium** | Default credentials in LoginPage | `LoginPage.tsx` |
-| **Medium** | CORS allows all origins | `main.py` |
-| **Low** | Several dead code / unused imports | Both frontend and backend |
+| Severity | Issue | Location | Status |
+|----------|-------|----------|--------|
+| **High** | Dashboard `spec` and `owner_id` not persisted | `db/models.py`, `api/dashboards.py` | Open |
+| **High** | `messure` typo breaks pie chart measure parsing | `core/utils.ts` | Open |
+| **Medium** | JWT in localStorage (XSS risk) | `LoginPage.tsx`, `ProtectedRoute.tsx` | Open |
+| **Medium** | N+1 queries in dashboard items endpoint | `api/dashboards.py` | Open |
+| **Medium** | Default credentials in LoginPage | `LoginPage.tsx` | Open |
+| **Medium** | CORS allows all origins | `main.py` | Open |
+| **Low** | Dead code / unused imports | — | ✅ Resolved in structural cleanup |
+| **Low** | No service layer (filter + auth logic mixed with HTTP) | `api/dashboards.py`, `api/deps.py` | 🔧 Filter + auth extracted to `services/` |
+| — | **New:** `services/filter_service.py` — independently testable | `app/services/` | ✅ Added |
+| — | **New:** Chart canvas components extracted from ViewerPage (1012→438 lines) | `components/` | ✅ Added |
 
 Full details: see [pitfalls/](pitfalls/) directory.
 

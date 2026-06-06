@@ -8,9 +8,9 @@
 |-----------|------|-------|-----------|
 | ProtectedRoute | Auth wrapper | ~18 | EditorPage, ViewerPage (via router) |
 | ThemeToggle | UI control | ~19 | LoginPage, RegisterPage, EditorPage |
-| BarChartCanvas | Inner component | ~190 | ViewerPage (defined inside) |
-| LineChartCanvas | Inner component | ~195 | ViewerPage (defined inside) |
-| PieChartCanvas | Inner component | ~115 | ViewerPage (defined inside) |
+| BarChartCanvas | Chart wrapper | ~190 | ViewerPage |
+| LineChartCanvas | Chart wrapper | ~195 | ViewerPage |
+| PieChartCanvas | Chart wrapper | ~115 | ViewerPage |
 
 ---
 
@@ -78,9 +78,9 @@ export default function ThemeToggle() {
 
 ---
 
-## BarChartCanvas (ViewerPage Inner Component)
+## BarChartCanvas
 
-**Defined in:** `ViewerPage.tsx` lines 517-708
+**File:** `src/components/BarChartCanvas.tsx` (extracted from `ViewerPage.tsx` during structural cleanup)
 
 **Purpose:** Wraps `BarChartItem` with React lifecycle management and tooltip overlay.
 
@@ -106,9 +106,9 @@ interface BarChartCanvasProps {
 
 ---
 
-## LineChartCanvas (ViewerPage Inner Component)
+## LineChartCanvas
 
-**Defined in:** `ViewerPage.tsx` lines 202-399
+**File:** `src/components/LineChartCanvas.tsx` (extracted from `ViewerPage.tsx` during structural cleanup)
 
 **Purpose:** Same pattern as BarChartCanvas but wraps `LineChartItem`.
 
@@ -116,9 +116,9 @@ interface BarChartCanvasProps {
 
 ---
 
-## PieChartCanvas (ViewerPage Inner Component)
+## PieChartCanvas
 
-**Defined in:** `ViewerPage.tsx` lines 401-515
+**File:** `src/components/PieChartCanvas.tsx` (extracted from `ViewerPage.tsx` during structural cleanup)
 
 **Purpose:** Same pattern but wraps `PieChartItem`.
 
@@ -235,12 +235,11 @@ export abstract class DashboardItem {
 
 ## Chart Utility Functions
 
-**File:** `src/core/utils.ts` (~429 lines)
+**File:** `src/core/utils.ts` (~400 lines)
 
 | Function | Purpose |
 |----------|---------|
 | `lightenColor(hex, amount)` | Lighten a hex color towards white |
-| `lightenColorHex2Hex(hex, amount)` | Lighten and return hex (UNUSED) |
 | `addOpacity(hex, amount)` | Adjust alpha of a hex color, return rgba |
 | `toPersianDigits(text)` | Convert 0-9 to ۰-۹ Persian digits |
 | `formatWithThousandSeparators(num)` | Format number with Persian comma separator (،) |

@@ -68,14 +68,18 @@
 main.py
 ├── core/config.py         ← pydantic-settings
 ├── core/security.py       ← python-jose, passlib, config
-├── db/base.py            ← models.py
-├── db/session.py         ← sqlalchemy, oracledb, config
+├── db/models.py           ← sqlalchemy (Base imported directly)
+├── db/session.py          ← sqlalchemy, oracledb, config
+├── db/raw.py              ← sqlalchemy (shared raw-SQL helper)
 ├── api/routes.py
 │   ├── api/auth.py        ← security.py, config, db/session, db/models, schemas
 │   ├── api/editor.py      ← deps.py, db/session
-│   ├── api/dashboards.py   ← deps.py, db/session, db/models
+│   ├── api/dashboards.py   ← deps.py, db/session, db/models, services/filter_service
 │   ├── api/user.py        ← deps.py, auth.py, db/models
-│   └── api/deps.py        ← auth.py, db/models, db/session
+│   └── api/deps.py        ← auth.py, db/models, db/session, services/authorization_service
+├── services/
+│   ├── filter_service.py     ← (pure logic, no DB deps)
+│   └── authorization_service.py ← db/models
 └── schemas.py             ← pydantic
 ```
 
@@ -99,12 +103,18 @@ main.tsx
 ├── pages/HomePage.tsx      ← axios, core/utils
 ├── pages/EditorPage.tsx    ← axios, @monaco-editor, ThemeToggle
 └── pages/ViewerPage.tsx    ← axios, core/BarChartItem, core/LineChartItem,
-                               core/PieChartItem, core/utils, echarts
+                               core/PieChartItem, core/utils,
+                               components/BarChartCanvas, components/LineChartCanvas,
+                               components/PieChartCanvas, types/dashboard
+    ├── components/BarChartCanvas.tsx  ← core/BarChartItem
+    ├── components/LineChartCanvas.tsx ← core/LineChartItem
+    ├── components/PieChartCanvas.tsx  ← core/PieChartItem, core/utils
     ├── core/BarChartItem.ts  ← core/DashboardItem, core/utils
     ├── core/LineChartItem.ts ← core/DashboardItem, core/utils
     ├── core/PieChartItem.ts  ← core/DashboardItem, core/utils
     ├── core/DashboardItem.ts ← (abstract base)
-    └── core/utils.ts         ← (leaf utility)
+    ├── core/utils.ts         ← (leaf utility)
+    └── types/dashboard.ts    ← (leaf types)
 ```
 
 ### High Fan-Out Modules

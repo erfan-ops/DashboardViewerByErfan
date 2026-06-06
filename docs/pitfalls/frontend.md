@@ -33,17 +33,9 @@ Chart dimensions are parsed from XML geometry at mount time and never updated. W
 
 ---
 
-## 3. Unused `echarts` Import
+## 3. Unused `echarts` Import — ✅ RESOLVED
 
-**Severity:** Low | **File:** `ViewerPage.tsx` line 11
-
-```typescript
-import { color } from 'echarts'
-```
-
-The `echarts` package is listed as a dependency but never actually used for chart rendering. The `color` import is unused in the code. This adds unnecessary bundle size.
-
-**Fix:** Remove the import and the `echarts` dependency from package.json.
+**Severity:** Low | **File:** `ViewerPage.tsx` — **Fixed during structural cleanup.** The `import { color } from 'echarts'` has been removed. The `echarts` package remains in `package.json` (future removal would require npm operations).
 
 ---
 
@@ -88,13 +80,9 @@ window.location.replace('/login')
 
 ---
 
-## 7. `lightenColorHex2Hex` Defined but Never Called
+## 7. `lightenColorHex2Hex` Defined but Never Called — ✅ RESOLVED
 
-**Severity:** Low | **File:** `core/utils.ts` lines 36-62
-
-The function `lightenColorHex2Hex` is fully implemented but never imported or called anywhere.
-
-**Fix:** Remove dead code.
+**Severity:** Low | **File:** `core/utils.ts` — **Fixed during structural cleanup.** The dead function has been removed.
 
 ---
 

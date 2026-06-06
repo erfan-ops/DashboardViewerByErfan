@@ -20,8 +20,14 @@ backend/app/
 ├── core/             # Cross-cutting infrastructure
 │   ├── config.py     # Settings from .env
 │   └── security.py   # Password hashing + JWT creation
+├── services/         # Business logic (extracted from api/)
+│   ├── filter_service.py       # Filter placeholder resolution engine
+│   └── authorization_service.py # Role resolution logic
+├── core/             # Cross-cutting infrastructure
+│   ├── config.py     # Settings from .env
+│   └── security.py   # Password hashing + JWT creation
 └── db/               # Database layer
-    ├── base.py       # Re-exports Base
+    ├── raw.py        # Raw-SQL execution helper
     ├── models.py     # SQLAlchemy ORM models
     └── session.py    # Engine creation + session factory
 ```
@@ -30,7 +36,7 @@ backend/app/
 
 The backend follows a **thin-controller** pattern where:
 
-1. **API handlers** (`api/*.py`) contain both route definitions AND business logic — there is no separate service layer
+1. **API handlers** (`api/*.py`) contain both route definitions AND business logic — there is business logic extracted to services/
 2. **Dependencies** (`deps.py`, `auth.py`) handle cross-cutting concerns: authentication, authorization, and DB sessions
 3. **Configuration** (`core/config.py`) uses pydantic-settings for `.env`-based configuration
 4. **Data access** mixes SQLAlchemy ORM (for simple CRUD) with raw SQL via `text()` (for complex queries)
@@ -56,15 +62,18 @@ The backend follows a **thin-controller** pattern where:
 | `main.py` | App creation, CORS, health endpoint, dev server startup | ~57 |
 | `api/routes.py` | Central router aggregation, ping endpoint | ~26 |
 | `api/auth.py` | Login, register, JWT validation | ~120 |
-| `api/dashboards.py` | Dashboard CRUD, items with dynamic SQL, tabs, filter groups | ~417 |
-| `api/deps.py` | Role-based access control dependency | ~52 |
+| `api/dashboards.py` | Dashboard CRUD, items with dynamic SQL, tabs, filter groups (filter logic moved to services) | ~300 |
+| `api/deps.py` | FastAPI dependency wiring (delegates to services/authorization_service) | ~35 |
+| `services/filter_service.py` | Filter placeholder resolution engine (extracted from dashboards.py) | ~110 |
+| `services/authorization_service.py` | Role resolution logic (extracted from deps.py) | ~35 |
 | `api/editor.py` | SQL execution, save, load saved queries | ~117 |
 | `api/user.py` | User roles endpoint | ~18 |
 | `core/config.py` | Pydantic Settings from .env | ~34 |
 | `core/security.py` | BCrypt password ops, JWT creation | ~34 |
 | `db/models.py` | ORM models + association tables | ~103 |
+| `db/raw.py` | Centralised raw-SQL execution helper | ~25 |
 | `db/session.py` | Engine + session factory | ~27 |
-| `schemas.py` | Pydantic response models | ~49 |
+| `schemas.py` | Pydantic response models | ~22 |
 
 ## Configuration Flow
 

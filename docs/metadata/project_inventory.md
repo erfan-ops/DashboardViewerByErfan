@@ -19,18 +19,20 @@ DashboardViewerbyErfan/
 │       ├── main.py               # FastAPI app factory, lifespan, CORS, healthcheck
 │       ├── schemas.py            # Pydantic response/request models
 │       ├── api/
-│       │   ├── __init__.py       # Empty
 │       │   ├── routes.py         # Main API router (/api prefix)
 │       │   ├── auth.py           # Auth endpoints (login, register, token validation)
 │       │   ├── dashboards.py     # Dashboard CRUD + items + tabs + filters
 │       │   ├── deps.py           # Authorization dependency (require_any_role)
 │       │   ├── editor.py         # SQL editor (execute, save, list saved)
 │       │   └── user.py           # User endpoints (roles lookup)
+│       ├── services/             # Business logic (extracted from api/)
+│       │   ├── filter_service.py       # Filter placeholder resolution engine
+│       │   └── authorization_service.py # Role resolution logic
 │       ├── core/
 │       │   ├── config.py         # Pydantic BaseSettings from .env
 │       │   └── security.py       # BCrypt password hashing, JWT creation
 │       └── db/
-│           ├── base.py           # Re-exports SQLAlchemy Base
+│           ├── raw.py            # Raw-SQL helper (centralised db.bind.connect)
 │           ├── models.py         # ORM models (User, Role, Group, Dashboard, SavedQuery)
 │           └── session.py        # SQLAlchemy engine + session factory
 │
@@ -46,14 +48,19 @@ DashboardViewerbyErfan/
 │       ├── main.tsx              # React entry: Chakra, Router, QueryClient, 401 interceptor
 │       ├── theme.ts              # Chakra UI theme (light mode default)
 │       ├── components/
-│       │   ├── ProtectedRoute.tsx # Auth guard (checks localStorage for JWT)
-│       │   └── ThemeToggle.tsx    # Light/dark mode toggle
+│       │   ├── ProtectedRoute.tsx  # Auth guard (checks localStorage for JWT)
+│       │   ├── ThemeToggle.tsx     # Light/dark mode toggle
+│       │   ├── BarChartCanvas.tsx  # Bar chart wrapper
+│       │   ├── LineChartCanvas.tsx # Line chart wrapper
+│       │   └── PieChartCanvas.tsx  # Pie chart wrapper
 │       ├── core/
 │       │   ├── DashboardItem.ts   # Abstract base class for chart items
 │       │   ├── BarChartItem.ts    # Canvas 2D stacked bar chart renderer
 │       │   ├── LineChartItem.ts   # Canvas 2D multi-line chart renderer
 │       │   ├── PieChartItem.ts    # Canvas 2D multi-pie donut chart renderer
 │       │   └── utils.ts          # Color helpers, Persian digits, XML parsers
+│       ├── types/
+│       │   └── dashboard.ts       # Shared TypeScript interfaces
 │       └── pages/
 │           ├── HomePage.tsx       # Dashboard listing (role-aware)
 │           ├── LoginPage.tsx      # Login form

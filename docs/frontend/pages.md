@@ -10,7 +10,7 @@
 | LoginPage | `/login` | ~73 | Low | OAuth2 form login |
 | RegisterPage | `/register` | ~73 | Low | User registration |
 | EditorPage | `/editor` | ~342 | Medium-High | SQL editor with Monaco + saved queries |
-| ViewerPage | `/viewer/:id` | ~1012 | High | Dashboard viewer with Canvas charts, tabs, filters |
+| ViewerPage | `/viewer/:id` | ~438 | Medium | Dashboard viewer with Canvas charts, tabs, filters (chart components extracted to `components/`) |
 
 ---
 
@@ -109,15 +109,13 @@
 
 ## ViewerPage (`/viewer/:id`)
 
-**File:** `src/pages/ViewerPage.tsx` (~1012 lines)
+**File:** `src/pages/ViewerPage.tsx` (~438 lines after structural cleanup; chart canvas components extracted to `components/`)
 
 **Purpose:** Render a dashboard with tabs, filter groups, and chart visualizations.
 
-**This is the most complex component in the application.**
-
 ### Architecture
 
-ViewerPage defines three inner component functions for chart rendering:
+ViewerPage imports three chart canvas components from `components/`:
 - `BarChartCanvas` — Bar chart canvas with tooltip
 - `LineChartCanvas` — Line chart canvas with tooltip
 - `PieChartCanvas` — Pie chart canvas with tooltip
@@ -165,5 +163,5 @@ The `renderChart()` function dispatches based on `item.item_type`:
 - RTL layout (`dir="rtl"`)
 - Persian digit formatting via `toPersianDigits()`
 
-### Unused Import
-- `import { color } from 'echarts'` — Listed as a dependency in package.json but the import is unused in the actual code
+### Cleaned in structural cleanup
+- Removed unused `echarts` import and inline chart component definitions (now in `components/`)

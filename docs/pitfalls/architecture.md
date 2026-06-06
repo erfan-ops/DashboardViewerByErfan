@@ -2,19 +2,16 @@
 
 > Generated: 2026-06-07 | Confidence: HIGH
 
-## 1. No Service Layer — Business Logic in Endpoints
+## 1. No Service Layer — Business Logic in Endpoints — 🔧 PARTIALLY RESOLVED
 
 **Severity:** Medium | **Files:** `api/auth.py`, `api/dashboards.py`, `api/editor.py`
 
-**Why it exists:** The codebase started small and grew organically. All business logic lives directly in FastAPI endpoint functions.
+**Status after structural cleanup:** A `services/` layer has been created with two extracted modules:
+- `services/filter_service.py` — Filter placeholder resolution engine (~110 lines extracted from `dashboards.py`)
+- `services/authorization_service.py` — Role resolution logic (~35 lines extracted from `deps.py`)
+- `db/raw.py` — Centralised raw-SQL pattern
 
-**Why it's risky:**
-- Cannot test business logic independently of HTTP
-- Logic duplication when multiple endpoints need similar operations
-- Hard to reason about data flow across the system
-- Endpoint functions exceed 100+ lines (dashboards.py items endpoint is ~200 lines)
-
-**Suggested improvement:** Extract business logic into service classes/modules. Endpoints should be thin controllers that delegate to services.
+**Remaining:** Auth logic (login/register) and SQL editor logic still live in API handlers. These are smaller modules (~110 lines each) with tight coupling to FastAPI `Form()`/`BackgroundTasks` conventions.
 
 ---
 
