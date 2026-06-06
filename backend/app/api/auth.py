@@ -1,13 +1,13 @@
 import bcrypt
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
 from app.db.session import get_db
 from app.db.models import User
-from app.schemas import UserOut, Token, LoginRequest
+from app.schemas import UserOut, Token
 from app.core.security import verify_password, create_access_token
 from app.core.config import get_settings
 
@@ -16,12 +16,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # keep the same tokenUrl so the frontend still hits /auth/login
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-
-class UserRegisterRequest(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    confirm_password: str
 
 
 @router.post("/register")
@@ -50,12 +44,6 @@ def register(
             detail="Passwords did not match!!!"
         )
 
-    # u = User(username=username, email=email, password_hash=bcrypt.hashpw(password.encode(), bcrypt.gensalt(12)), role="ROLE_USER")
-    # db.add(u)
-    # db.commit()
-    # db.refresh(u)
-    # return u
-    
     with db.bind.connect() as conn:
         conn.execute(
             text("INSERT INTO USERS (ID, USERNAME, EMAIL, PASSWORD_HASH, ROLE) VALUES (user_id_seq.nextval, :username, :email, :password_hash, :role)"),

@@ -1,5 +1,4 @@
 import json
-import re
 from typing import List, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -9,6 +8,7 @@ from sqlalchemy import text
 from app.api.deps import require_any_role
 from app.db.session import get_db
 from app.db.models import Dashboard
+from app.services.filter_service import resolve_filters
 
 
 router = APIRouter(prefix="/dashboards", tags=["dashboards"])
@@ -125,7 +125,6 @@ def get_dashboard(dashboard_id: int, db: Session = Depends(get_db), user=Depends
     return d
 
 
-FILTER_PLACEHOLDER_RE = re.compile(r"\{\{\s*filter:([^\}\s]+)\s*\}\}")
 @router.get("/{dashboard_id}/items", response_model=List[DashboardItemResult])
 def get_dashboard_items(
     dashboard_id: int,
@@ -198,104 +197,8 @@ def get_dashboard_items(
                 """).bindparams(sql_id=sql_id)
                 filter_rows = conn.execute(filters_stmt).fetchall()
 
-                # Build a dict of filter metadata by key for quick lookup
-                filter_meta = {}
-                for fr in filter_rows:
-                    fid, fkey, fop, fdefault, fallow, logical_col, data_type = fr
-                    # clean logical_col - CSV export may have doubled quotes
-                    if isinstance(logical_col, str):
-                        logical_col = logical_col.replace('""', '"')
-                    filter_meta[fkey] = {
-                        "id": fid,
-                        "operator": (fop or "").upper(),
-                        "default": fdefault,
-                        "allow_empty": str(fallow) in ("1", "Y", "y", "true", "TRUE"),
-                        "logical_column": logical_col,
-                        "data_Type": data_type
-                    }
-
-                # --- Replace filter placeholders in the SQL safely ---
-                params = {}
-                param_index = 0
-
-                def filter_replacer(match: re.Match) -> str:
-                    nonlocal param_index, params
-                    key = match.group(1)
-                    meta = filter_meta.get(key)
-                    # If filter metadata not found, remove placeholder (or you can raise)
-                    if not meta:
-                        return ""
-
-                    # Determine value precedence: provided -> default -> none
-                    value = provided_filters.get(key, None)
-                    if value is None or value == "":
-                        # use default if present
-                        if meta["default"] not in (None, ""):
-                            value = meta["default"]
-                        else:
-                            # no provided value and no default
-                            if meta["allow_empty"]:
-                                # skip filter completely
-                                return ""
-                            else:
-                                # not allowed to be empty -> return a predicate that yields no rows
-                                # (we return a short deterministic always-false clause)
-                                return " AND 1 = 0 "
-
-                    col = meta["logical_column"]
-                    # generate predicate based on operator
-                    op = meta["operator"]
-                    # produce unique param name
-                    param_index += 1
-                    p_name = f"p_{key}_{param_index}"
-
-                    # handle common operators
-                    if op in ("=", ">", "<", ">=", "<=", "<>"):
-                        params[p_name] = value
-                        # Keep the surrounding spaces to be safe in insertion contexts
-                        return f" AND {col} {op} :{p_name} "
-                    elif op == "IN":
-                        # value must be array-like
-                        if not isinstance(value, (list, tuple)):
-                            # try to split comma string
-                            if isinstance(value, str):
-                                value = [v.strip() for v in value.split(",") if v.strip() != ""]
-                            else:
-                                value = [value]
-                        # add each as param or use named list expansion (here we expand)
-                        placeholders = []
-                        for i, v in enumerate(value):
-                            pn = f"{p_name}_{i}"
-                            params[pn] = v
-                            placeholders.append(f":{pn}")
-                        if not placeholders:
-                            # no values -> depending on allow_empty we either skip or no data
-                            return "" if meta["allow_empty"] else " AND 1 = 0 "
-                        return f" {col} IN ({', '.join(placeholders)}) "
-                    elif op == "BETWEEN":
-                        # expect list/tuple of two values
-                        if isinstance(value, (list, tuple)) and len(value) == 2:
-                            pn1 = f"{p_name}_1"; pn2 = f"{p_name}_2"
-                            params[pn1] = value[0]; params[pn2] = value[1]
-                            return f" {col} BETWEEN :{pn1} AND :{pn2} "
-                        else:
-                            # invalid, treat as no-data or skip
-                            return "" if meta["allow_empty"] else " AND 1 = 0 "
-                    elif op == "LIKE":
-                        params[p_name] = value
-                        return f" {col} LIKE :{p_name} "
-                    else:
-                        # default to equality
-                        params[p_name] = value
-                        return f" {col} = :{p_name} "
-
-                # Apply replacements (this will replace placeholders everywhere they appear in the SQL)
-                processed_sql = FILTER_PLACEHOLDER_RE.sub(filter_replacer, raw_sql_text)
-
-                # Optional safety: ensure we didn't leave dangling placeholders
-                if FILTER_PLACEHOLDER_RE.search(processed_sql):
-                    # unresolved placeholder -> remove them (or raise)
-                    processed_sql = FILTER_PLACEHOLDER_RE.sub("", processed_sql)
+                # Delegate filter placeholder resolution to the filter service
+                processed_sql, params = resolve_filters(raw_sql_text, filter_rows, provided_filters)
 
                 # Add limit
                 limit_clause = " FETCH FIRST 1000 ROWS ONLY"

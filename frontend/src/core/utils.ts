@@ -33,34 +33,6 @@ export function lightenColor(hex: string, amount: number = 0.6): string {
     return `rgba(${r},${g},${b},${a})`;
 };
 
-export function lightenColorHex2Hex(hex: string, amount: number = 0.6): string {
-    hex = hex.replace("#", "");
-    if (hex.length === 3 || hex.length === 4) hex = hex.split("").map(ch => ch + ch).join("");
-
-    const num = parseInt(hex, 16);
-
-    let r;
-    let g;
-    let b;
-
-    if (hex.length === 6) {
-        r = (num >> 16) & 255;
-        g = (num >> 8) & 255;
-        b = num & 255;
-    } else {
-        r = (num >> 24) & 255;
-        g = (num >> 16) & 255;
-        b = (num >> 8) & 255;
-    }
-    
-
-    r = Math.round(r + (255 - r) * amount);
-    g = Math.round(g + (255 - g) * amount);
-    b = Math.round(b + (255 - b) * amount);
-
-    return `#${r.toString(16)}${g.toString(16)}${b.toString(16)}`;
-};
-
 export function addOpacity(hex: string, amount: number = 0): string {
     hex = hex.replace("#", "");
     if (hex.length === 3 || hex.length === 4) hex = hex.split("").map(ch => ch + ch).join("");

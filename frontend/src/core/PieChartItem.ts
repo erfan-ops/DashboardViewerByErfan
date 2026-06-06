@@ -469,7 +469,4 @@ export class PieChartItem extends DashboardItem {
     return null;
   }
 
-  render_webgl(gl: WebGL2RenderingContext, hoveredIndex: number | null): void {
-    // WebGL path not implemented in this example.
-  }
 }
